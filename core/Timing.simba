@@ -1,0 +1,330 @@
+{
+======
+Timing
+======
+}
+
+(*
+WaitFuncEx
+~~~~~~~~~~
+
+.. code-block:: pascal
+
+    function WaitFuncEx(Func: string; var Args: TVariantArray; WaitPerLoop, MaxWait: integer): boolean;
+
+Calls Func with arguments Args every WaitPerLoop milliseconds for a max of
+MaxWait milliseconds. Func can return any basic types (boolean, string,
+integer). Boolean: Returns it. String: Returns true if string equals 'true'.
+Integer: Returns true unless it equals 0.
+
+.. note::
+
+  by Dgby714
+
+Example:
+
+.. code-block:: pascal
+
+  var
+    V: TVariantArray;
+  begin
+    V := [0, 0, 16711680, 4, 4, 500, 500];
+    WriteLn(WaitFuncEx('FindColorEx', V, 10 + Random(15), 1000));
+  end.
+*)
+function waitFuncEx(Func: string; var Args: TVariantArray; WaitPerLoop, MaxWait: integer): boolean;
+var
+  T: Timer;
+  Temp: variant;
+begin
+  T.start();
+  while (T.timeElapsed() < MaxWait) do
+  begin
+    //Temp := CallProc(Func, Args);
+    Temp := VariantInvoke(Func, Args);
+    if (not VariantIsString(Temp)) then
+      Temp := ToStr(Temp);
+    if StrToBoolDef(Temp, False) then
+      Exit(True);
+    Wait(WaitPerLoop);
+  end;
+end;
+
+(*
+WaitFunc
+~~~~~~~~
+
+.. code-block:: pascal
+
+    function WaitFunc(Func: Function: Boolean; WaitPerLoop, MaxTime: Integer): Boolean;
+
+Waits for function Func to be true. WaitPerLoop is how often you
+want to call "Func" function.
+Example: "waitFunc(@BankScreen, 10 + Random(15), 750);" will check if BankScreen
+is open every 10-25th millisecond, for a maximum of 750 milliseconds.
+Notice the '@'.
+
+.. note::
+
+  by Rasta Magician, small edit by EvilChicken!
+
+Example:
+
+.. code-block:: pascal
+
+*)
+function waitFunc(Func: function: Boolean; WaitPerLoop, MaxTime: Integer): Boolean;
+var
+  T: Timer;
+begin
+  T.start();
+  while (T.timeElapsed < MaxTime) do
+  begin
+    if (Func()) then
+      Exit(True);
+    Wait(WaitPerLoop);
+  end;
+end;
+
+(*
+waitColor
+~~~~~~~~~
+
+.. code-block:: pascal
+
+    function waitColor(x, y, Color, Tol, MaxTime: integer): Boolean;
+
+Waits for a color at (x, y) with tolerance Tol, returns true if found
+
+.. note::
+
+  by Rasta Magician, fixed by TRiLeZ
+
+Example:
+
+.. code-block:: pascal
+
+*)
+function waitColor(X, Y, Color, Tol, MaxTime: Integer): Boolean;
+var
+  T: Timer;
+begin
+  Result := False;
+  if tol = 0 then tol := 1;
+  T.start();
+  while T.timeElapsed < MaxTime do
+  begin
+    if cs_similarColors(getColor(X, Y), Color, Tol, cs_CTS1) then
+      Exit(True);
+    Wait(5 + Random(6));
+  end;
+end;
+
+(*
+waitFindColor
+~~~~~~~~~~~~~
+
+.. code-block:: pascal
+
+    function waitFindColor(var Pnt: TPoint; Color, Tol: Integer; Area: TBox; MaxTime: Integer): Boolean;
+
+Waits for a color at (x, y) with tolerance Tol, returns true if found
+
+.. note::
+
+  by Rasta Magician, fixed by TRiLeZ & Flight
+
+Example:
+
+.. code-block:: pascal
+
+*)
+function waitFindColor(var Pnt: TPoint; Color, Tol: Integer; Area: TBox; MaxTime: Integer): Boolean;
+var
+  T: Timer;
+begin
+  Result := False;
+  T.start();
+  while T.timeElapsed < MaxTime do
+  begin
+    if createCol(Color,Tol).findIn(Area, Pnt) then
+      Exit(True);
+    Wait(10 + Random(6));
+  end;
+end;
+
+(*
+waitFindColors
+~~~~~~~~~~~~~~
+
+.. code-block:: pascal
+
+    function waitFindColors(var TPA: TPointArray; Color, Tol: Integer; Area: TBox; MaxTime: Integer): Boolean;
+
+Waits for a color at (x, y) with tolerance Tol, returns true if found
+
+.. note::
+
+  by IceFire908 based completely off WaitFindColor
+
+Example:
+
+.. code-block:: pascal
+
+*)
+function waitFindColors(var TPA: TPointArray; Color, Tol: Integer; Area: TBox; MaxTime: Integer): Boolean;
+var
+  T: Timer;
+begin
+  Result := False;
+  T.start();
+  while T.timeElapsed do
+  begin
+    if createCol(Color,Tol).findAllIn(Area, TPA) then
+      Exit(True);
+    Wait(10 + Random(6));
+  end;
+end;
+
+(*
+waitColorCount
+~~~~~~~~~~~~~~
+
+.. code-block:: pascal
+
+    function waitColorCount(Color, Tol: Integer; Area: TBox; MinCount, MaxCount, MaxTime: integer):boolean;
+
+Waits Color count in box (x1, y1, x2, y2) with Tol
+
+.. note::
+
+  by Rasta Magician
+
+Example:
+
+.. code-block:: pascal
+
+*)
+function waitColorCount(Color, Tol: Integer; Area: TBox; MinCount, MaxCount, MaxTime: integer):boolean;
+var
+  T: Timer;
+  TPA: TPointArray;
+begin
+  Result := False;
+  T.start();
+  while T.timeElapsed < MaxTime do
+  begin
+    if createCol(Color,Tol).findAllIn(Area, TPA) then
+      if InRange(Length(TPA), MinCount, MaxCount) then
+        Exit(True);
+    Wait(15 + Random(10));
+  end;
+end;
+
+(*
+waitColorGone
+~~~~~~~~~~~~~
+
+.. code-block:: pascal
+
+    function waitColorGone(Color, x, y, Tol, MaxTime: integer): Boolean;
+
+Waits until a colour is gone at (x, y) with tolerance and a timeout.
+Results true if the colour disappeared at (x, y) within the time cap.
+
+.. note::
+
+  by TRiLeZ
+
+Example:
+
+.. code-block:: pascal
+
+*)
+function waitColorGone(Color, x, y, Tol, MaxTime: integer): Boolean;
+var
+  T: Timer;
+begin
+  Result := False;
+  if Tol = 0 then Tol := 1;
+  T.start();
+  while T.timeElapsed < MaxTime do
+  begin
+    if (not cs_similarColors(getColor(X, Y), Color, Tol, cs_CTS1)) then
+      Exit(True);
+    Wait(10);
+  end;
+end;
+
+(*
+waitColorGoneIn
+~~~~~~~~~~~~~~~
+
+.. code-block:: pascal
+
+    function waitColorGoneIn(Color, Tol: Integer; Area: TBox; MaxTime: integer): Boolean;
+
+Waits until a colour is gone in an area with tolerance and a timeout.
+Results true if the colour disappeared in the area within the time cap.
+
+.. note::
+
+  by TRiLeZ
+
+Example:
+
+.. code-block:: pascal
+
+*)
+function waitColorGoneIn(Color, Tol: Integer; Area: TBox; MaxTime: integer): Boolean;
+var
+  T   : Timer;
+  pnt : TPoint;
+begin
+  Result := False;
+  if Tol = 0 then Tol := 1;
+  T.start();
+  while T.timeElapsed < MaxTime do
+  begin
+    if (not createCol(Color,Tol).findIn(Area, pnt)) then
+      Exit(True);
+    Wait(10);
+  end;
+end;
+
+(*
+waitFindDTMEx
+~~~~~~~~~~~~~
+
+.. code-block:: pascal
+
+    function waitFindDTM(DTM: integer; var x, y: integer; Area: TBox; WaitPerLoop, MaxTime: integer): boolean;
+
+waits 'waitTime' for the 'DTM' to be found.  If found, returns true and the
+DTM's coodinates in x and y.
+
+.. note::
+
+    Author: Coh3n
+    Last Modified: Mar. 8th, 2012 by beginner5
+
+Example:
+
+.. code-block:: pascal
+
+    if (waitFindDTM(dtmHatchet, x, y, Area_Inv, 5000)) then
+      mouse(Point(x,y), 5, 5, mouse_Left);
+*)
+function waitFindDTM(DTM: integer; var x, y: integer; Area: TBox; WaitPerLoop, MaxTime: integer): boolean;
+var
+  T: Timer;
+begin
+  T.start();
+
+  while T.timeElapsed < MaxTime do
+  begin
+    if (cs_findDTM(DTM, x, y, Area, cs_CTS1)) then
+      Exit(True);
+    wait(WaitPerLoop);
+  end;
+end;
